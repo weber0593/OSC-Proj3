@@ -1,7 +1,12 @@
 //Project 3
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.Scanner;
+import java.util.ArrayList;
+
 /*FLOW:
-	-take in 3 command line arguements: alg type, size of page (max pages = 64000/pagesize), input file name
+	-take in 3 command line arguments: alg type, size of page (max pages = 64000/pagesize), input file name
 	-allocate physical mem space 2000/pagesize rounding down = # of frames
 	-read in text file into object Page that has PID, address, read or write (write=true or false)
 	-decide which algorithm to use (switch statement like before?)
@@ -12,12 +17,12 @@
   	Optimal
   		Read whole sample. Decide order of replace (HOW?) in advance and put that order in an array.  At runtime just execute in order.
   	FIFO
-  		replace frames in order (just keep a counter of the next frame to replace, increment everytime a frame is replaced)
+  		replace frames in order (just keep a counter of the next frame to replace, increment every time a frame is replaced)
   	LRU
-		find the frame that wasnt accessed for the longest time.  (need some array of number and move the one that was accessed 
+		find the frame that wasn't accessed for the longest time.  (need some array of number and move the one that was accessed
 		to the front. Array list prob will work best.  Search for index of frame, remove it from the list, add it to the front)
 	Second Chance		
-		FIFO but with an extra reference bit.  when you want to replace, check the reference bit.  If 1 set to 0 move on to next vitim,
+		FIFO but with an extra reference bit.  when you want to replace, check the reference bit.  If 1 set to 0 move on to next victim,
 		if 0 replace.  When used set bit to 1.
 	Enhanced Second Chance
 		2 reference bits this time.  When you want to replace a page, look for (x,0), if (1,0) set to (0,0), if (0,0) replace.  If none 
@@ -26,55 +31,53 @@
 		?
 */
 
-public class Pager{
-	public static void main(String args[]){
-		int pageSize = args[2];
-		int numPages = 64000/pageSize; //this may not be relevent
+public class Pager	{
+	public static void main(String args[])	{
+		int pageSize = Integer.parseInt(args[1]);
+		int numPages = 64000/pageSize; //this may not be relevant
 		int numFrames = 2000/pageSize;
-		int frames[] = new frames[numFrames]; //this will be my physical memory
-		ArrayList<Page> queue = new ArrayList<Page>(); 
+		int frames[] = new int[numFrames]; //this will be my physical memory
+		ArrayList<Page> queue = new ArrayList<Page>();
 
 
-		File input = new File(args[1]);
+		File input = new File(args[2]);
 		readFromFile(input, queue); //populate queue with data from the file
 		String algorithm = args[0];
-		switch(algorithm){
+		switch(algorithm)	{
 			case "fifo":
-				fifo(queue, frames[]);
+				fifo(queue, frames);
 				break;
 			case "lru":
-				lru(queue, frames[]);
+				lru(queue, frames);
 				break;
 			case "sc":
-				sc(queue, frames[]);
+				sc(queue, frames);
 				break;
 			case "esc":
-				esc(queue, frames[]);
+				esc(queue, frames);
 				break;
 			case "optimal":
-				optimal(queue, frames[]);
+				optimal(queue, frames);
 				break;
 			case "custom":
-				custom(queue, frames[]);
+				custom(queue, frames);
 				break;
 			default:
 				System.out.println("Invalid algorithm type");
 		}
 	}
 
-	static void readFromFile(File f, ArrayList<Page> queue){
+	static void readFromFile(File f, ArrayList<Page> queue)	{
 		int pid, address;
-		char tempChar;
 		boolean write;
-		try{
+		try	{
 			Scanner read = new Scanner(f);
 			read.useDelimiter("(, *)|\\n");	// matches a comma and zero or more spaces, or a newline.
 
-			while(read.hasNext()){
+			while(read.hasNext())	{
 				pid = read.nextInt();
 				address = read.nextInt();
-				tempChar = read.nextChar();
-				if(tempChar=='W')
+				if(read.next().equals("W"))
 					write = true;
 				else
 					write = false;
@@ -84,8 +87,27 @@ public class Pager{
 
 			read.close();
 		}
-		catch(FileNotFoundException e){
+		catch(FileNotFoundException e)	{
 			System.out.println("File not found");
 		}
+	}
+	
+	static void fifo(ArrayList<Page> queue, int frames[])	{
+		
+	}
+	static void lru(ArrayList<Page> queue, int frames[])	{
+		
+	}
+	static void sc(ArrayList<Page> queue, int frames[])	{
+		
+	}
+	static void esc(ArrayList<Page> queue, int frames[])	{
+		
+	}
+	static void optimal(ArrayList<Page> queue, int frames[])	{
+		
+	}
+	static void custom(ArrayList<Page> queue, int frames[])	{
+		
 	}
 }
