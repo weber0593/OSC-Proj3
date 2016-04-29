@@ -34,10 +34,13 @@ import java.util.ArrayList;
 public class Pager	{
 	public static void main(String args[])	{
 		int pageSize = Integer.parseInt(args[1]);
-		int numPages = 64000/pageSize; //this may not be relevant
-		int numFrames = 2000/pageSize;
-		int frames[] = new int[numFrames]; //this will be my physical memory
-		ArrayList<Page> queue = new ArrayList<Page>();
+		int numPages = 65536/pageSize; //this may not be relevant
+		int numFrames = 2048/pageSize;
+		Frame[] frames = new Frame[numFrames]; //this will be my physical memory
+		for(int i=0; i < numFrames; ++i) {
+			frames[i] = new Frame();
+		}
+		ArrayList<MemoryAccess> queue = new ArrayList<MemoryAccess>();
 
 
 		File input = new File(args[2]);
@@ -45,29 +48,29 @@ public class Pager	{
 		String algorithm = args[0];
 		switch(algorithm)	{
 			case "fifo":
-				fifo(queue, frames);
+				fifo(queue, frames, pageSize);
 				break;
 			case "lru":
-				lru(queue, frames);
+				lru(queue, frames, pageSize);
 				break;
 			case "sc":
-				sc(queue, frames);
+				sc(queue, frames, pageSize);
 				break;
 			case "esc":
-				esc(queue, frames);
+				esc(queue, frames, pageSize);
 				break;
 			case "optimal":
-				optimal(queue, frames);
+				optimal(queue, frames, pageSize);
 				break;
 			case "custom":
-				custom(queue, frames);
+				custom(queue, frames, pageSize);
 				break;
 			default:
 				System.out.println("Invalid algorithm type");
 		}
 	}
 
-	static void readFromFile(File f, ArrayList<Page> queue)	{
+	static void readFromFile(File f, ArrayList<MemoryAccess> queue)	{
 		int pid, address;
 		boolean write;
 		try	{
@@ -81,7 +84,7 @@ public class Pager	{
 					write = true;
 				else
 					write = false;
-				Page p = new Page(pid, address, write);
+				MemoryAccess p = new MemoryAccess(pid, address, write);
 				queue.add(p);
 			}
 
@@ -92,22 +95,101 @@ public class Pager	{
 		}
 	}
 	
-	static void fifo(ArrayList<Page> queue, int frames[])	{
+	// returns the number of the frame corresponding to the given page number and pid, or -1 if not found.
+	static int find_frame(Frame[] frames, int pid, int page_number) {
+		for(int i = 0; i < frames.length; ++i) {
+			Frame f = frames[i];
+			if(f.pid == pid && f.page_number == page_number)
+				return i;
+		}
+		return -1;	// frame not found
+	}
+	
+	static void fifo(ArrayList<MemoryAccess> queue, Frame[] frames, int pageSize)	{
+		int index_to_replace = 0;
+		int num_page_faults = 0;
+		int num_disk_accesses = 0;
+		for(MemoryAccess access : queue) {
+			int virtual_address = access.address;
+			int page_number = virtual_address / pageSize;
+			int pid = access.pid;
+			boolean write = access.write;
+			
+			// check if the page is in physical memory
+			int frame_number = find_frame(frames, pid, page_number);
+			if(frame_number == -1) {
+				// page is not in memory.
+				
+				// page fault.
+				++num_page_faults;
+				if(!write) {
+					// read from disk.
+					++num_disk_accesses;
+				}
+				
+				frame_number = index_to_replace;
+				Frame frame = frames[frame_number];
+				
+				if(frame.page_number == -1) {
+					// no replacement
+					frame.pid = pid;
+					frame.page_number = page_number;
+					
+					System.out.println("loaded page #" + page_number + " of process #" + pid + " to frame #" + frame_number + " with no replacement.");
+				} else {
+					// must replace existing page
+					
+					boolean frame_was_dirty = false;
+					
+					if(frame.dirty) {
+						// page is dirty. Must write to disk
+						++num_disk_accesses;
+						frame.dirty = false;
+						frame_was_dirty = true;
+					}
+					
+					frame.pid = pid;
+					frame.page_number = page_number;
+					
+					System.out.println("loaded page #" + page_number + " of process #" + pid + " to frame #" + frame_number + " with replacement.");
+					if(frame_was_dirty)
+						System.out.println("\tNeeded to write frame #" + frame_number + " to disk");
+				}
+				
+				index_to_replace++;
+				if(index_to_replace >= frames.length)
+					index_to_replace = 0;
+			} else {
+				// page is already in physical memory.
+				System.out.println("no page fault. accessed frame #" + frame_number);
+			}
+			
+			if(write) {
+				// mark as dirty
+				frames[frame_number].dirty = true;
+			}
+			
+			int physical_address = (frame_number * pageSize) + (virtual_address % pageSize);
+			
+			System.out.println("\tVirtual Address: " + virtual_address + " -> Physical Address: " + physical_address);
+		}
+		
+		System.out.println("Number of page faults: " + num_page_faults + ". Number of disk accesses: " + num_disk_accesses);
+	}
+	
+	static void lru(ArrayList<MemoryAccess> queue, Frame[] frames, int pageSize)	{
 		
 	}
-	static void lru(ArrayList<Page> queue, int frames[])	{
+	static void sc(ArrayList<MemoryAccess> queue, Frame[] frames, int pageSize)	{
 		
 	}
-	static void sc(ArrayList<Page> queue, int frames[])	{
+	static void esc(ArrayList<MemoryAccess> queue, Frame[] frames, int pageSize)	{
 		
 	}
-	static void esc(ArrayList<Page> queue, int frames[])	{
+	static void optimal(ArrayList<MemoryAccess> queue, Frame[] frames, int pageSize)	{
 		
 	}
-	static void optimal(ArrayList<Page> queue, int frames[])	{
-		
-	}
-	static void custom(ArrayList<Page> queue, int frames[])	{
+	static void custom(ArrayList<MemoryAccess> queue, Frame[] frames, int pageSize)	{
 		
 	}
 }
