@@ -178,6 +178,103 @@ public class Pager	{
 	}
 	
 	static void lru(ArrayList<MemoryAccess> queue, Frame[] frames, int pageSize)	{
+		int index_to_replace = 0;
+		int num_page_faults = 0;
+		int num_disk_accesses = 0;
+		int maxFrames = frames.length;
+		ArrayList<Frame> lrulist = new ArrayList<Frame>();
+		boolean memfull = false;
+		for(MemoryAccess access : queue) {
+			int virtual_address = access.address;
+			int page_number = virtual_address / pageSize;
+			int pid = access.pid;
+			boolean write = access.write;
+			
+			// check if the page is in physical memory
+			int frame_number = find_frame(frames, pid, page_number);
+			if(frame_number == -1) {
+				// page is not in memory.
+				
+				// page fault.
+				++num_page_faults;
+				if(!write) {
+					// read from disk.
+					++num_disk_accesses;
+				}
+				
+
+				
+				if(memfull){
+					//frame to replace = frame at lrulist[maxFrames]
+					int pid_to_replace = lrulist.get(maxFrames).pid;
+					int page_number_to_replace = lrulist.get(maxFrames).pid;
+					//get the index of the frame in memory that matches frame to replace in lrulist
+					for(int i =0; i<frames.length; i++){
+						if(frames[i].pid == pid_to_replace && frames[i].page_number==page_number_to_replace)
+							index_to_replace=i;
+					}
+				}
+
+				frame_number = index_to_replace;
+				Frame frame = frames[frame_number];
+				
+				if(frame.page_number == -1) {
+					// no replacement
+					frame.pid = pid;
+					frame.page_number = page_number;
+					lrulist.add(frame);
+					index_to_replace++; //this is just to load the initial pages in when memory is blank, this wont be reached once mem is full
+					if(index_to_replace = maxFrames) //mem is full, switch to lru replacement
+						memfull = true;
+					System.out.println("loaded page #" + page_number + " of process #" + pid + " to frame #" + frame_number + " with no replacement.");
+				} else {
+					// must replace existing page
+					
+					boolean frame_was_dirty = false;
+					
+					if(frame.dirty) {
+						// page is dirty. Must write to disk
+						++num_disk_accesses;
+						frame.dirty = false;
+						frame_was_dirty = true;
+					}
+					//remove old occurance of the frame we want to remove from lrulist
+					for(int i=0; i<lrulist.size(); i++){
+						if(lrulist.get(i).pid = frame.pid && lrulist.get(i).page_number = frame.page_number){ //if we found something in lrulist that matches what we want to remove
+							lrulist.remove(i);
+						}
+					}
+					frame.pid = pid;
+					frame.page_number = page_number;
+					lrulist.add(frame); //add the new frame to the top of lrulist
+					System.out.println("loaded page #" + page_number + " of process #" + pid + " to frame #" + frame_number + " with replacement.");
+					if(frame_was_dirty)
+						System.out.println("\tNeeded to write frame #" + frame_number + " to disk");
+				}
+				
+			} else {
+				// page is already in physical memory.
+				//remove old occurance of the frame we want to update from lrulist
+				for(int i=0; i<lrulist.size(); i++){
+					if(lrulist.get(i).pid = frame.pid && lrulist.get(i).page_number = frame.page_number){ //if we found something in lrulist that matches what we want to remove
+						lrulist.remove(i);
+					}
+				}
+				lrulist.add(frame); //add the new frame to the top of lrulist
+				System.out.println("no page fault. accessed frame #" + frame_number);
+			}
+			
+			if(write) {
+				// mark as dirty
+				frames[frame_number].dirty = true;
+			}
+			
+			int physical_address = (frame_number * pageSize) + (virtual_address % pageSize);
+			
+			System.out.println("\tVirtual Address: " + virtual_address + " -> Physical Address: " + physical_address);
+		}
+		
+		System.out.println("Number of page faults: " + num_page_faults + ". Number of disk accesses: " + num_disk_accesses);
 		
 	}
 	static void sc(ArrayList<MemoryAccess> queue, Frame[] frames, int pageSize)	{
