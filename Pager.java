@@ -6,8 +6,8 @@ import java.util.Scanner;
 import java.util.ArrayList;
 
 /*FLOW:
-	-take in 3 command line arguments: alg type, size of page (max pages = 64000/pagesize), input file name
-	-allocate physical mem space 2000/pagesize rounding down = # of frames
+	-take in 3 command line arguments: alg type, size of page (max pages = 65536/pagesize), input file name
+	-allocate physical mem space 2048/pagesize rounding down = # of frames
 	-read in text file into object Page that has PID, address, read or write (write=true or false)
 	-decide which algorithm to use (switch statement like before?)
 	-execute each line
@@ -271,17 +271,100 @@ public class Pager	{
 		}
 		
 		System.out.println("Number of page faults: " + num_page_faults + ". Number of disk accesses: " + num_disk_accesses);
-		
 	}
+	
 	static void sc(ArrayList<MemoryAccess> queue, Frame[] frames, int pageSize)	{
+		int index_to_replace = 0;
+		int num_page_faults = 0;
+		int num_disk_accesses = 0;
+		for(MemoryAccess access : queue) {
+			int virtual_address = access.address;
+			int page_number = virtual_address / pageSize;
+			int pid = access.pid;
+			boolean write = access.write;
+			
+			// check if the page is in physical memory
+			int frame_number = find_frame(frames, pid, page_number);
+			if(frame_number == -1) {
+				// page is not in memory.
+				
+				// page fault.
+				++num_page_faults;
+				if(!write) {
+					// read from disk.
+					++num_disk_accesses;
+				}
+				
+				// check ref bits, and give pages a second chance.
+				while(frames[index_to_replace].ref_bits == 1) {
+					// frame has been referenced recently
+					System.out.println("Frame #" + index_to_replace + " has ref bit == 1. Clearing it and moving on.");
+					frames[index_to_replace].ref_bits = 0;
+					++index_to_replace;
+					if(index_to_replace >= frames.length)
+						index_to_replace = 0;
+				}
+				frame_number = index_to_replace;
+				Frame frame = frames[frame_number];
+				
+				if(frame.page_number == -1) {
+					// no replacement
+					frame.pid = pid;
+					frame.page_number = page_number;
+					frame.ref_bits = 1;
+					
+					System.out.println("loaded page #" + page_number + " of process #" + pid + " to frame #" + frame_number + " with no replacement.");
+				} else {
+					// must replace existing page
+					
+					boolean frame_was_dirty = false;
+					
+					if(frame.dirty) {
+						// page is dirty. Must write to disk
+						++num_disk_accesses;
+						frame.dirty = false;
+						frame_was_dirty = true;
+					}
+					
+					frame.pid = pid;
+					frame.page_number = page_number;
+					frame.ref_bits = 1;
+					
+					System.out.println("loaded page #" + page_number + " of process #" + pid + " to frame #" + frame_number + " with replacement.");
+					if(frame_was_dirty)
+						System.out.println("\tNeeded to write frame #" + frame_number + " to disk");
+				}
+				
+				index_to_replace++;
+				if(index_to_replace >= frames.length)
+					index_to_replace = 0;
+			} else {
+				// page is already in physical memory.
+				frames[frame_number].ref_bits = 1;
+				System.out.println("no page fault. accessed frame #" + frame_number);
+			}
+			
+			if(write) {
+				// mark as dirty
+				frames[frame_number].dirty = true;
+			}
+			
+			int physical_address = (frame_number * pageSize) + (virtual_address % pageSize);
+			
+			System.out.println("\tVirtual Address: " + virtual_address + " -> Physical Address: " + physical_address);
+		}
 		
+		System.out.println("Number of page faults: " + num_page_faults + ". Number of disk accesses: " + num_disk_accesses);
 	}
+	
 	static void esc(ArrayList<MemoryAccess> queue, Frame[] frames, int pageSize)	{
 		
 	}
+	
 	static void optimal(ArrayList<MemoryAccess> queue, Frame[] frames, int pageSize)	{
 		
 	}
+	
 	static void custom(ArrayList<MemoryAccess> queue, Frame[] frames, int pageSize)	{
 		
 	}
