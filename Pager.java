@@ -205,12 +205,14 @@ public class Pager	{
 
 				
 				if(memfull){
-					//frame to replace = frame at lrulist[maxFrames]
-					int pid_to_replace = lrulist.get(maxFrames).pid;
-					int page_number_to_replace = lrulist.get(maxFrames).pid;
+					// no free frames. Use LRU replacement.
+					
+					//frame to replace = frame at front of lrulist
+					int pid_to_replace = lrulist.get(0).pid;
+					int page_number_to_replace = lrulist.get(0).page_number;
 					//get the index of the frame in memory that matches frame to replace in lrulist
 					for(int i =0; i<frames.length; i++){
-						if(frames[i].pid == pid_to_replace && frames[i].page_number==page_number_to_replace)
+						if(frames[i].pid == pid_to_replace && frames[i].page_number == page_number_to_replace)
 							index_to_replace=i;
 					}
 				}
@@ -224,7 +226,7 @@ public class Pager	{
 					frame.page_number = page_number;
 					lrulist.add(frame);
 					index_to_replace++; //this is just to load the initial pages in when memory is blank, this wont be reached once mem is full
-					if(index_to_replace = maxFrames) //mem is full, switch to lru replacement
+					if(index_to_replace == maxFrames) //mem is full, switch to lru replacement
 						memfull = true;
 					System.out.println("loaded page #" + page_number + " of process #" + pid + " to frame #" + frame_number + " with no replacement.");
 				} else {
@@ -239,11 +241,8 @@ public class Pager	{
 						frame_was_dirty = true;
 					}
 					//remove old occurance of the frame we want to remove from lrulist
-					for(int i=0; i<lrulist.size(); i++){
-						if(lrulist.get(i).pid = frame.pid && lrulist.get(i).page_number = frame.page_number){ //if we found something in lrulist that matches what we want to remove
-							lrulist.remove(i);
-						}
-					}
+					lrulist.remove(frame);
+					
 					frame.pid = pid;
 					frame.page_number = page_number;
 					lrulist.add(frame); //add the new frame to the top of lrulist
@@ -254,12 +253,9 @@ public class Pager	{
 				
 			} else {
 				// page is already in physical memory.
+				Frame frame = frames[frame_number];
 				//remove old occurance of the frame we want to update from lrulist
-				for(int i=0; i<lrulist.size(); i++){
-					if(lrulist.get(i).pid = frame.pid && lrulist.get(i).page_number = frame.page_number){ //if we found something in lrulist that matches what we want to remove
-						lrulist.remove(i);
-					}
-				}
+				lrulist.remove(frame);
 				lrulist.add(frame); //add the new frame to the top of lrulist
 				System.out.println("no page fault. accessed frame #" + frame_number);
 			}
