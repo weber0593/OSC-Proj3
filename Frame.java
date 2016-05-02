@@ -1,7 +1,7 @@
 public class Frame	{
 	int page_number;
 	int pid;
-	char ref_bits;	// reference bits used by page replacement algorithm.
+	int ref_bits;	// reference bits used by page replacement algorithm.
 	boolean dirty;
 
 	public Frame(){
