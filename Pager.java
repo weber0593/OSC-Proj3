@@ -362,7 +362,101 @@ public class Pager	{
 	}
 	
 	static void optimal(ArrayList<MemoryAccess> queue, Frame[] frames, int pageSize)	{
+		int index_to_replace = 0;
+		int num_page_faults = 0;
+		int num_disk_accesses = 0;
+		int position_in_queue =0;
+		boolean memfull = false;
+		int maxFrames = frames.length;
+		for(MemoryAccess access : queue) {
+			int virtual_address = access.address;
+			int page_number = virtual_address / pageSize;
+			int pid = access.pid;
+			boolean write = access.write;
+			
+			// check if the page is in physical memory
+			int frame_number = find_frame(frames, pid, page_number);
+			if(frame_number == -1) {
+				// page is not in memory.
+				
+				// page fault.
+				++num_page_faults;
+				if(!write) {
+					// read from disk.
+					++num_disk_accesses;
+				}
+				if(memfull){ //if mem is full switch to optimal replacement
+					int max_distance = 0;
+					int max_distance_index = 0;
+					for(int i=0; i<frames.length; i++){
+						if(max_distance=-1){
+							break; //found an optimal match before searching everything
+						}
+						tempFrame = frames[i];
+						for(int j=position_in_queue+1; j<queue.size(); j++){
+							if(tempFrame.pid == queue.get(j).pid && tempFrame.page_number == queue.get(j).page_number){ //when you find a match in queue
+								if(j-position_in_queue > max_distance){ //if it is farther away then the previous match, this is a better frame to replace
+									max_distance = j-position_in_queue;
+									max_distance_index=i;
+								}
+							}
+							if(j==queue.size()){//this means there was no match for the rest of queue, the most optimal frame to replace
+								max_distance_index=i;
+								max_distance=-1; //an idication to stop searching
+							}
+						}
+					}
+					index_to_replace=max_distance_index;
+				}
+				frame_number = index_to_replace;
+				Frame frame = frames[frame_number];
+				
+				if(frame.page_number == -1) {
+					// no replacement
+					frame.pid = pid;
+					frame.page_number = page_number;
+					index_to_replace++;
+					if(index_to_replace == maxFrames)
+						memfull = true;
+					
+					System.out.println("loaded page #" + page_number + " of process #" + pid + " to frame #" + frame_number + " with no replacement.");
+				} else {
+					// must replace existing page
+					
+					boolean frame_was_dirty = false;
+					
+					if(frame.dirty) {
+						// page is dirty. Must write to disk
+						++num_disk_accesses;
+						frame.dirty = false;
+						frame_was_dirty = true;
+					}
+					
+					frame.pid = pid;
+					frame.page_number = page_number;
+					
+					System.out.println("loaded page #" + page_number + " of process #" + pid + " to frame #" + frame_number + " with replacement.");
+					if(frame_was_dirty)
+						System.out.println("\tNeeded to write frame #" + frame_number + " to disk");
+				}
+				
+			} else {
+				// page is already in physical memory.
+				System.out.println("no page fault. accessed frame #" + frame_number);
+			}
+			
+			if(write) {
+				// mark as dirty
+				frames[frame_number].dirty = true;
+			}
+			
+			int physical_address = (frame_number * pageSize) + (virtual_address % pageSize);
+			
+			System.out.println("\tVirtual Address: " + virtual_address + " -> Physical Address: " + physical_address);
+			position_in_queue++;
+		}
 		
+		System.out.println("Number of page faults: " + num_page_faults + ". Number of disk accesses: " + num_disk_accesses);
 	}
 	
 	static void custom(ArrayList<MemoryAccess> queue, Frame[] frames, int pageSize)	{
