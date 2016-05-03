@@ -493,7 +493,7 @@ public class Pager	{
 						}
 						Frame tempFrame = frames[i];
 						for(int j=position_in_queue+1; j<queue.size(); j++){
-							if(tempFrame.pid == queue.get(j).pid && tempFrame.page_number == queue.get(j).page_number){ //when you find a match in queue
+							if(tempFrame.pid == queue.get(j).pid && tempFrame.page_number == (queue.get(j).address/pageSize)){ //when you find a match in queue
 								if(j-position_in_queue > max_distance){ //if it is farther away then the previous match, this is a better frame to replace
 									max_distance = j-position_in_queue;
 									max_distance_index=i;
@@ -564,7 +564,7 @@ public class Pager	{
 		int num_page_faults = 0;
 		int num_disk_accesses = 0;
 		int maxFrames = frames.length;
-		Random rand;
+		Random rand = new Random();
 		for(MemoryAccess access : queue) {
 			int virtual_address = access.address;
 			int page_number = virtual_address / pageSize;
