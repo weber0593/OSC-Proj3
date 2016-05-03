@@ -488,10 +488,10 @@ public class Pager	{
 					int max_distance = 0;
 					int max_distance_index = 0;
 					for(int i=0; i<frames.length; i++){
-						if(max_distance=-1){
+						if(max_distance == -1){
 							break; //found an optimal match before searching everything
 						}
-						tempFrame = frames[i];
+						Frame tempFrame = frames[i];
 						for(int j=position_in_queue+1; j<queue.size(); j++){
 							if(tempFrame.pid == queue.get(j).pid && tempFrame.page_number == queue.get(j).page_number){ //when you find a match in queue
 								if(j-position_in_queue > max_distance){ //if it is farther away then the previous match, this is a better frame to replace
