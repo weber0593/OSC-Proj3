@@ -210,6 +210,7 @@ public class Pager	{
 					//frame to replace = frame at front of lrulist
 					int pid_to_replace = lrulist.get(0).pid;
 					int page_number_to_replace = lrulist.get(0).page_number;
+					lrulist.remove(0); //after you replace it remove it from the list
 					//get the index of the frame in memory that matches frame to replace in lrulist
 					for(int i =0; i<frames.length; i++){
 						if(frames[i].pid == pid_to_replace && frames[i].page_number == page_number_to_replace)
